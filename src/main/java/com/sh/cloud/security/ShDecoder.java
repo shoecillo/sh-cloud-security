@@ -10,36 +10,61 @@ import java.util.Base64;
 
 import javax.crypto.Cipher;
 
+/**
+ * Decoder asymetric key
+ * @author shoe011
+ *
+ */
 public class ShDecoder {
 
-	private static final String UTF_8 = "UTF-8";
 	private static final String RSA = "RSA";	
 	private String pubFile = null;
-
-	public ShDecoder(String pubFile) {
+	private Boolean isBase64Key = null;
+	
+	private PublicKey pbKey;
+	
+	/**
+	 * Constructor for Decoder.Load a Public Key
+	 * @param pubFile
+	 * @param isBase64Key
+	 * @throws Exception 
+	 */
+	public ShDecoder(String pubFile,Boolean isBase64Key) throws Exception {
 		super();
 		this.pubFile = pubFile;
-		
+		this.isBase64Key = isBase64Key;
+		this.pbKey = this.getPublicCert();
 	}
+	
+	/**
+	 * Decrypt a bytes content with public Key
+	 * @param content - byte[] content in base64
+	 * @return byte[] - Decoded content
+	 * @throws Exception
+	 */
+	public byte[] decode(byte[] content) throws Exception {
 
-	public String decode(byte[] content) throws Exception {
-
-		// KeyPair keypair = getJks();
 		Cipher ciph = Cipher.getInstance(RSA);
-		ciph.init(Cipher.DECRYPT_MODE, getPublicCert());
+		ciph.init(Cipher.DECRYPT_MODE,pbKey);
 		byte[] b = Base64.getDecoder().decode(content);
-		String dec = new String(ciph.doFinal(b), UTF_8);
-		return dec;
+		return ciph.doFinal(b);
 	}
-
-	public PublicKey getPublicCert() throws Exception {
+	
+	/**
+	 * Get PublicKey object
+	 * @return PublicKey
+	 * @throws Exception
+	 */
+	private PublicKey getPublicCert() throws Exception {
 
 		Path p = Paths.get(pubFile);
 		byte[] keyBytes = Files.readAllBytes(p);
+		if(isBase64Key) {
+			keyBytes = Base64.getDecoder().decode(keyBytes);
+		}
 		X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
 		KeyFactory kf = KeyFactory.getInstance(RSA);
 		return kf.generatePublic(spec);
 
 	}
-
 }
